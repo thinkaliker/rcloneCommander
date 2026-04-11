@@ -33,9 +33,10 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copyDirection, setCopyDirection] = useState<'L2R' | 'R2L'>('L2R');
   const [threads, setThreads] = useState(4);
-  const [autoRemove, setAutoRemove] = useState(5);
   const [configDetails, setConfigDetails] = useState<{ path: string, dump: string, error?: string } | null>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [mkdirState, setMkdirState] = useState<{ remote: string, path: string } | null>(null);
+  const [mkdirFolderName, setMkdirFolderName] = useState('');
   const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
@@ -245,6 +246,29 @@ function App() {
     }
   };
 
+  const handleMkdir = async () => {
+    if (!mkdirState || !mkdirFolderName) return;
+    try {
+      const response = await fetch(`${API_BASE}/mkdir`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ remote: mkdirState.remote, pathParam: mkdirState.path, folderName: mkdirFolderName })
+      });
+      if (response.ok) {
+        setMkdirState(null);
+        setMkdirFolderName('');
+        if (mkdirState.remote === leftRemote && mkdirState.path === leftPath) fetchFiles(leftRemote, leftPath, setLeftFiles, setLeftLoading, true);
+        if (mkdirState.remote === rightRemote && mkdirState.path === rightPath) fetchFiles(rightRemote, rightPath, setRightFiles, setRightLoading, true);
+      } else {
+        const err = await response.json();
+        alert(err.error || 'Failed to create folder');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error creating directory');
+    }
+  };
+
   return (
     <div className="app-container">
       <div className="header">
@@ -273,6 +297,7 @@ function App() {
           isLoading={leftLoading}
           onDropFile={handleDragAndDrop}
           onRefresh={() => fetchFiles(leftRemote, leftPath, setLeftFiles, setLeftLoading, true)}
+          onNewFolder={() => { setMkdirState({ remote: leftRemote, path: leftPath }); setMkdirFolderName(''); }}
           autoRefreshVal={leftAutoRefresh}
           setAutoRefreshVal={setLeftAutoRefresh}
         />
@@ -309,6 +334,7 @@ function App() {
           isLoading={rightLoading}
           onDropFile={handleDragAndDrop}
           onRefresh={() => fetchFiles(rightRemote, rightPath, setRightFiles, setRightLoading, true)}
+          onNewFolder={() => { setMkdirState({ remote: rightRemote, path: rightPath }); setMkdirFolderName(''); }}
           autoRefreshVal={rightAutoRefresh}
           setAutoRefreshVal={setRightAutoRefresh}
         />
@@ -364,6 +390,30 @@ function App() {
             )}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
               <button className="btn-primary" onClick={() => setIsConfigModalOpen(false)}>Close Debugger</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mkdirState && (
+        <div className="overlay">
+          <div className="modal">
+            <h2>Create New Folder</h2>
+            <div className="modal-input">
+              <label>Folder Name</label>
+              <input
+                type="text"
+                value={mkdirFolderName}
+                onChange={(e) => setMkdirFolderName(e.target.value)}
+                className="path-input"
+                placeholder="New folder name..."
+                autoFocus
+                onKeyDown={(e) => { if (e.key === 'Enter') handleMkdir(); }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
+              <button className="btn-primary" style={{ background: '#555', boxShadow: 'none' }} onClick={() => { setMkdirState(null); setMkdirFolderName(''); }}>Cancel</button>
+              <button className="btn-primary" onClick={handleMkdir}>Create</button>
             </div>
           </div>
         </div>

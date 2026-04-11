@@ -68,6 +68,29 @@ app.get('/api/files', async (req, res) => {
   }
 });
 
+app.post('/api/mkdir', async (req, res) => {
+  const { remote, pathParam, folderName } = req.body;
+
+  if (!remote || !folderName) {
+    return res.status(400).json({ error: 'remote and folderName are required' });
+  }
+
+  let targetPath = '';
+  if (remote === 'Local Filesystem') {
+    targetPath = pathParam ? path.join(pathParam, folderName) : `/${folderName}`;
+  } else {
+    targetPath = `${remote}:${pathParam ? pathParam + '/' : ''}${folderName}`;
+  }
+
+  try {
+    await execAsync(`rclone mkdir "${targetPath}"`);
+    res.json({ success: true, message: 'Folder created successfully' });
+  } catch (error: any) {
+    console.error(`Error creating folder ${targetPath}:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/copy', (req, res) => {
   const { source, destination, threads, autoRemoveSeconds } = req.body;
 

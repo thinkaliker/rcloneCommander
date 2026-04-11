@@ -15,6 +15,7 @@ interface PaneProps {
     isLoading: boolean;
     onDropFile?: (source: any, dest: any) => void;
     onRefresh: () => void;
+    onNewFolder?: () => void;
     autoRefreshVal: number;
     setAutoRefreshVal: (val: number) => void;
 }
@@ -33,6 +34,7 @@ export const Pane: React.FC<PaneProps> = ({
     isLoading,
     onDropFile,
     onRefresh,
+    onNewFolder,
     autoRefreshVal,
     setAutoRefreshVal
 }) => {
@@ -130,7 +132,12 @@ export const Pane: React.FC<PaneProps> = ({
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px 8px', fontSize: '0.85rem', color: '#ccc' }}>
-                <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={onRefresh}>⟳ Refresh</span>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                    <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={onRefresh}>⟳ Refresh</span>
+                    {onNewFolder && (
+                        <span style={{ cursor: 'pointer', textDecoration: 'underline', color: 'var(--accent)' }} onClick={onNewFolder}>+ New Folder</span>
+                    )}
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <label>Auto-refresh (s):</label>
                     <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '4px', overflow: 'hidden' }}>
