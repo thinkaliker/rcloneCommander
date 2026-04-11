@@ -2,8 +2,7 @@ version: '3.8'
 
 services:
   rclone-commander:
-    build: .
-    image: ghcr.io/thinkalike/rclone-commander:latest
+    image: ghcr.io/thinkaliker/rclone-commander:latest
     container_name: rclone-commander
     ports:
       - "3001:3001"
