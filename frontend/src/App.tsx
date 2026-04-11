@@ -194,6 +194,18 @@ function App() {
     }
   };
 
+  const handleStopJob = async (jobId: string) => {
+    try {
+      await fetch(`${API_BASE}/copy/stop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId })
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const hasRunningJobs = Object.values(activeJobs).some(j => j.status === 'running');
   const runningJobs = Object.values(activeJobs).filter(j => j.status === 'running');
 
@@ -302,28 +314,33 @@ function App() {
         </div>
       )}
 
-      {hasRunningJobs && (
-        <div className="overlay" style={{ background: 'transparent', pointerEvents: 'none', alignItems: 'flex-end', paddingBottom: '30px' }}>
-          <div className="modal" style={{ pointerEvents: 'all', width: '500px' }}>
-            <h3 style={{ color: '#fff', marginBottom: '10px' }}>Active Jobs</h3>
-            {runningJobs.map(job => (
-              <div key={job.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#aaa', marginBottom: '5px' }}>
-                  <span>{job.source.split('/').pop()}</span>
-                  <span>{job.progress}</span>
+      {Object.keys(activeJobs).length > 0 && (
+        <div className="bottom-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h3 style={{ color: '#fff', margin: 0 }}>Copy Jobs</h3>
+            <button className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => {
+              fetchFiles(leftRemote, leftPath, setLeftFiles, setLeftLoading);
+              fetchFiles(rightRemote, rightPath, setRightFiles, setRightLoading);
+            }}>Refresh Folders</button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {Object.values(activeJobs).map(job => (
+              <div key={job.id} className="job-item">
+                <div className="job-item-info">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#ccc', marginBottom: '6px' }}>
+                    <span>{job.source.split('/').pop()} ➡️ {job.destination.split('/').pop() || '/'}</span>
+                    <span style={{ color: job.status === 'error' ? 'var(--danger)' : '#aaa' }}>{job.progress}</span>
+                  </div>
+                  <div className="progress-bar-container">
+                    <div className="progress-bar-fill" style={{ width: job.progress.includes('%') ? job.progress.split('%')[0] + '%' : (job.status === 'completed' ? '100%' : '0%'), background: job.status === 'error' ? 'var(--danger)' : 'var(--accent)' }}></div>
+                  </div>
                 </div>
-                <div className="progress-bar-container">
-                  <div className="progress-bar-fill" style={{ width: job.progress.includes('%') ? job.progress.split('%')[0] + '%' : '100%' }}></div>
-                </div>
+                {job.status === 'running' && (
+                  <button className="btn-primary" style={{ background: 'var(--danger)', padding: '6px 12px', fontSize: '0.8rem', boxShadow: 'none' }} onClick={() => handleStopJob(job.id)}>Stop</button>
+                )}
               </div>
             ))}
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
-              <p className="status-text">Copying in background...</p>
-              <button className="btn-primary" style={{ marginLeft: 20, padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => {
-                fetchFiles(leftRemote, leftPath, setLeftFiles, setLeftLoading);
-                fetchFiles(rightRemote, rightPath, setRightFiles, setRightLoading);
-              }}>Refresh Views</button>
-            </div>
           </div>
         </div>
       )}

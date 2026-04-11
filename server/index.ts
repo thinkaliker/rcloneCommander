@@ -25,6 +25,7 @@ interface CopyJob {
   threads: number;
 }
 const activeJobs: Record<string, CopyJob> = {};
+const activeProcesses: Record<string, any> = {};
 
 app.get('/api/remotes', async (req, res) => {
   try {
@@ -106,6 +107,8 @@ app.post('/api/copy', (req, res) => {
     `--transfers=${numThreads}`
   ]);
 
+  activeProcesses[jobId] = child;
+
   child.stderr.on('data', (data) => {
     // rclone normally prints progress to stderr
     const output = data.toString();
@@ -136,6 +139,21 @@ app.post('/api/copy', (req, res) => {
 
 app.get('/api/copy/status', (req, res) => {
   res.json({ jobs: activeJobs });
+});
+
+app.post('/api/copy/stop', (req, res) => {
+  const { jobId } = req.body;
+  if (activeProcesses[jobId]) {
+    activeProcesses[jobId].kill('SIGTERM');
+    delete activeProcesses[jobId];
+    if (activeJobs[jobId]) {
+      activeJobs[jobId].status = 'error';
+      activeJobs[jobId].progress = 'Stopped by user';
+    }
+    res.json({ message: 'Job stopped' });
+  } else {
+    res.status(404).json({ error: 'Job not found' });
+  }
 });
 
 app.get('/api/config', async (req, res) => {
