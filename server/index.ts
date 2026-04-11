@@ -151,16 +151,6 @@ app.get('/api/config', async (req, res) => {
   }
 });
 
-app.listen(port, async () => {
+app.listen(port, () => {
   console.log(`Server running on port ${port}`);
-  try {
-    const { stdout: configFile } = await execAsync('rclone config file');
-    console.log(`Rclone Config Path: ${configFile.trim()}`);
-
-    // We execute dump but fallback to standard show in case of older rclone versions
-    const { stdout: configDump } = await execAsync('rclone config dump || rclone config show');
-    console.log(`Rclone Configuration:\n${configDump.trim()}`);
-  } catch (err: any) {
-    console.error(`Failed to load rclone config details: ${err.message}`);
-  }
 });
