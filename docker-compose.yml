@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  rclone-commander:
+    build: .
+    image: ghcr.io/thinkalike/rclone-commander:latest
+    container_name: rclone-commander
+    ports:
+      - "3001:3001"
+    volumes:
+      # Map your host system's rclone configuration file (read-only for safety)
+      - ~/.config/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
+      # Optional: Map a specific host directory you want to copy files to/from
+      # - /path/on/your/host:/target:rw
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped

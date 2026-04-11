@@ -3,6 +3,7 @@ import cors from 'cors';
 import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
+import fs from 'fs';
 
 const app = express();
 const port = 3001;
@@ -179,6 +180,16 @@ app.get('/api/config', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Serve frontend static files securely strictly as a fallback behind exact API domains
+const frontendDist = path.join(__dirname, '../frontend/dist');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
