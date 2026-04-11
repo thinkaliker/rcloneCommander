@@ -33,6 +33,7 @@ function App() {
   const [autoRemove, setAutoRemove] = useState(5);
   const [configDetails, setConfigDetails] = useState<{ path: string, dump: string, error?: string } | null>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
     fetch(`${API_BASE}/remotes`)
@@ -105,11 +106,18 @@ function App() {
   useEffect(() => {
     const interval = setInterval(() => {
       fetch(`${API_BASE}/copy/status`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.jobs) setActiveJobs(data.jobs);
+        .then(res => {
+          if (!res.ok) throw new Error('Bad response');
+          setIsConnected(true);
+          return res.json();
         })
-        .catch(console.error);
+        .then(data => {
+          if (data && data.jobs) setActiveJobs(data.jobs);
+        })
+        .catch(err => {
+          console.error(err);
+          setIsConnected(false);
+        });
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -237,7 +245,13 @@ function App() {
   return (
     <div className="app-container">
       <div className="header">
-        <h1>rclone<span>Commander</span></h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <h1>rclone<span>Commander</span></h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: isConnected ? 'var(--accent)' : 'var(--danger)', padding: '6px 12px', background: 'rgba(0,0,0,0.3)', borderRadius: '20px', border: `1px solid ${isConnected ? 'var(--accent)' : 'var(--danger)'}` }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: isConnected ? 'var(--accent)' : 'var(--danger)', boxShadow: `0 0 8px ${isConnected ? 'var(--accent)' : 'var(--danger)'}` }}></div>
+            {isConnected ? 'Server Connected' : 'Server Disconnected'}
+          </div>
+        </div>
         <button className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.9rem' }} onClick={showConfig}>Rclone Config</button>
       </div>
 

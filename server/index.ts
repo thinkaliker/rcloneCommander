@@ -12,10 +12,6 @@ const execAsync = promisify(exec);
 app.use(cors());
 app.use(express.json());
 
-app.get('/', (req, res) => {
-  res.send('Server is running and listening for rclone commands.');
-});
-
 // Data structures for tracking jobs
 interface CopyJob {
   id: string;
