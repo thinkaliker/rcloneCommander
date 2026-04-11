@@ -72,9 +72,9 @@ npm run dev &
 SERVER_PID=$!
 cd ..
 
-echo "Starting Vite frontend on port 5173..."
+echo "Starting Vite frontend on port 5173 (all interfaces)..."
 cd frontend
-npm run dev &
+npm run dev -- --host 0.0.0.0 &
 FRONTEND_PID=$!
 cd ..
 
