@@ -22,11 +22,15 @@ function App() {
   const [rightSelected, setRightSelected] = useState<Set<string>>(new Set());
   const [rightLoading, setRightLoading] = useState(false);
 
+  const [leftAutoRefresh, setLeftAutoRefresh] = useState(0);
+  const [rightAutoRefresh, setRightAutoRefresh] = useState(0);
+
   // Job State
   const [activeJobs, setActiveJobs] = useState<Record<string, CopyJob>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copyDirection, setCopyDirection] = useState<'L2R' | 'R2L'>('L2R');
   const [threads, setThreads] = useState(4);
+  const [autoRemove, setAutoRemove] = useState(5);
   const [configDetails, setConfigDetails] = useState<{ path: string, dump: string, error?: string } | null>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
@@ -44,8 +48,8 @@ function App() {
       .catch(console.error);
   }, []);
 
-  const fetchFiles = async (remote: string, path: string, setFiles: (f: RcloneFile[]) => void, setLoading: (l: boolean) => void) => {
-    setLoading(true);
+  const fetchFiles = async (remote: string, path: string, setFiles: (f: RcloneFile[]) => void, setLoading: (l: boolean) => void, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       let fullPath = '';
       if (remote === 'Local Filesystem') {
@@ -83,6 +87,22 @@ function App() {
   }, [rightRemote, rightPath]);
 
   useEffect(() => {
+    if (leftAutoRefresh <= 0) return;
+    const interval = setInterval(() => {
+      fetchFiles(leftRemote, leftPath, setLeftFiles, setLeftLoading, true);
+    }, leftAutoRefresh * 1000);
+    return () => clearInterval(interval);
+  }, [leftAutoRefresh, leftRemote, leftPath]);
+
+  useEffect(() => {
+    if (rightAutoRefresh <= 0) return;
+    const interval = setInterval(() => {
+      fetchFiles(rightRemote, rightPath, setRightFiles, setRightLoading, true);
+    }, rightAutoRefresh * 1000);
+    return () => clearInterval(interval);
+  }, [rightAutoRefresh, rightRemote, rightPath]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       fetch(`${API_BASE}/copy/status`)
         .then(res => res.json())
@@ -101,6 +121,12 @@ function App() {
     } else {
       newSelected.add(fileName);
     }
+    setSelected(newSelected);
+  };
+
+  const toggleAll = (fileNames: string[], selectAll: boolean, selected: Set<string>, setSelected: (s: Set<string>) => void) => {
+    const newSelected = new Set(selected);
+    fileNames.forEach(f => selectAll ? newSelected.add(f) : newSelected.delete(f));
     setSelected(newSelected);
   };
 
@@ -144,7 +170,8 @@ function App() {
           body: JSON.stringify({
             source: sourceFile,
             destination: destStr,
-            threads: threads
+            threads: threads,
+            autoRemoveSeconds: autoRemove
           })
         });
       } catch (e) {
@@ -170,7 +197,8 @@ function App() {
         body: JSON.stringify({
           source: sourceFile,
           destination: destStr,
-          threads: threads
+          threads: threads,
+          autoRemoveSeconds: autoRemove
         })
       });
     } catch (e) {
@@ -227,8 +255,12 @@ function App() {
           files={leftFiles}
           selectedFiles={leftSelected}
           toggleFile={(file) => toggleSelection(file, leftSelected, setLeftSelected)}
+          toggleAll={(names, select) => toggleAll(names, select, leftSelected, setLeftSelected)}
           isLoading={leftLoading}
           onDropFile={handleDragAndDrop}
+          onRefresh={() => fetchFiles(leftRemote, leftPath, setLeftFiles, setLeftLoading, true)}
+          autoRefreshVal={leftAutoRefresh}
+          setAutoRefreshVal={setLeftAutoRefresh}
         />
 
         <div className="controls-bar" style={{ flexDirection: 'column', justifyContent: 'center' }}>
@@ -259,8 +291,12 @@ function App() {
           files={rightFiles}
           selectedFiles={rightSelected}
           toggleFile={(file) => toggleSelection(file, rightSelected, setRightSelected)}
+          toggleAll={(names, select) => toggleAll(names, select, rightSelected, setRightSelected)}
           isLoading={rightLoading}
           onDropFile={handleDragAndDrop}
+          onRefresh={() => fetchFiles(rightRemote, rightPath, setRightFiles, setRightLoading, true)}
+          autoRefreshVal={rightAutoRefresh}
+          setAutoRefreshVal={setRightAutoRefresh}
         />
       </div>
 
@@ -273,6 +309,11 @@ function App() {
             <div className="modal-input">
               <label>Threads (Multi-threading)</label>
               <input type="number" min="1" max="16" value={threads} onChange={(e) => setThreads(parseInt(e.target.value) || 4)} className="path-input" />
+            </div>
+
+            <div className="modal-input">
+              <label>Auto-remove completed (seconds, 0 to keep forever)</label>
+              <input type="number" min="0" max="3600" value={autoRemove} onChange={(e) => setAutoRemove(parseInt(e.target.value) || 0)} className="path-input" />
             </div>
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>

@@ -11,8 +11,12 @@ interface PaneProps {
     files: RcloneFile[];
     selectedFiles: Set<string>;
     toggleFile: (fileName: string) => void;
+    toggleAll?: (fileNames: string[], selectAll: boolean) => void;
     isLoading: boolean;
     onDropFile?: (source: any, dest: any) => void;
+    onRefresh: () => void;
+    autoRefreshVal: number;
+    setAutoRefreshVal: (val: number) => void;
 }
 
 export const Pane: React.FC<PaneProps> = ({
@@ -25,8 +29,12 @@ export const Pane: React.FC<PaneProps> = ({
     files,
     selectedFiles,
     toggleFile,
+    toggleAll,
     isLoading,
-    onDropFile
+    onDropFile,
+    onRefresh,
+    autoRefreshVal,
+    setAutoRefreshVal
 }) => {
     const [pathInput, setPathInput] = useState(activePath);
     const [isDragOver, setIsDragOver] = useState(false);
@@ -120,11 +128,38 @@ export const Pane: React.FC<PaneProps> = ({
                     placeholder="Path... (Press Enter to navigate)"
                 />
             </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px 8px', fontSize: '0.85rem', color: '#ccc' }}>
+                <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={onRefresh}>⟳ Refresh</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <label>Auto-refresh (s):</label>
+                    <input
+                        type="number"
+                        min="0"
+                        style={{ width: '45px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', color: '#fff', borderRadius: '4px', padding: '2px 4px', fontSize: '0.8rem' }}
+                        value={autoRefreshVal}
+                        onChange={(e) => setAutoRefreshVal(parseInt(e.target.value) || 0)}
+                    />
+                </div>
+            </div>
+
             <div className="file-list-container">
                 {isLoading ? (
                     <div style={{ padding: 20, textAlign: 'center', color: '#888' }}>Loading...</div>
                 ) : (
                     <div>
+                        <div className="file-item select-all-row" style={{ background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid var(--glass-border)' }}>
+                            <input
+                                type="checkbox"
+                                className="file-checkbox"
+                                checked={files.length > 0 && files.every(f => selectedFiles.has(f.Name))}
+                                onChange={(e) => {
+                                    if (toggleAll) toggleAll(files.map(f => f.Name), e.target.checked);
+                                }}
+                            />
+                            <div className="file-name" style={{ marginLeft: '10px', fontWeight: 'bold' }}>Select All ({files.length} items)</div>
+                        </div>
+
                         {(activePath !== '' && activePath !== '/') && (
                             <div className="file-item" onClick={goUpdir} onDrop={handleDrop}>
                                 <div className="file-icon">📁</div>

@@ -23,6 +23,7 @@ interface CopyJob {
   progress: string; // latest percentage or text from stdout
   status: 'running' | 'completed' | 'error';
   threads: number;
+  autoRemoveSeconds?: number;
 }
 const activeJobs: Record<string, CopyJob> = {};
 const activeProcesses: Record<string, any> = {};
@@ -71,7 +72,7 @@ app.get('/api/files', async (req, res) => {
 });
 
 app.post('/api/copy', (req, res) => {
-  const { source, destination, threads } = req.body;
+  const { source, destination, threads, autoRemoveSeconds } = req.body;
 
   if (!source || !destination) {
     return res.status(400).json({ error: 'source and destination are required' });
@@ -96,6 +97,7 @@ app.post('/api/copy', (req, res) => {
     progress: 'Starting...',
     status: 'running',
     threads: numThreads,
+    autoRemoveSeconds: autoRemoveSeconds !== undefined ? autoRemoveSeconds : 5,
   };
 
   const child = spawn('rclone', [
@@ -134,6 +136,13 @@ app.post('/api/copy', (req, res) => {
   child.on('close', (code) => {
     activeJobs[jobId].status = code === 0 ? 'completed' : 'error';
     if (code === 0) activeJobs[jobId].progress = '100%';
+
+    const delay = activeJobs[jobId].autoRemoveSeconds;
+    if (delay && delay > 0) {
+      setTimeout(() => {
+        delete activeJobs[jobId];
+      }, delay * 1000);
+    }
   });
 
   res.json({ jobId, message: 'Copy job started' });
