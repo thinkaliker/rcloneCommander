@@ -234,9 +234,6 @@ function App() {
     }
   };
 
-  const hasRunningJobs = Object.values(activeJobs).some(j => j.status === 'running');
-  const runningJobs = Object.values(activeJobs).filter(j => j.status === 'running');
-
   return (
     <div className="app-container">
       <div className="header">
