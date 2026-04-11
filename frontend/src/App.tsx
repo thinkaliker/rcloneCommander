@@ -333,7 +333,7 @@ function App() {
                     <span style={{ color: job.status === 'error' ? 'var(--danger)' : '#aaa' }}>{job.progress}</span>
                   </div>
                   <div className="progress-bar-container">
-                    <div className="progress-bar-fill" style={{ width: job.progress.includes('%') ? job.progress.split('%')[0] + '%' : (job.status === 'completed' ? '100%' : '0%'), background: job.status === 'error' ? 'var(--danger)' : 'var(--accent)' }}></div>
+                    <div className="progress-bar-fill" style={{ width: `${job.progress.match(/([0-9.]+)%/)?.[1] || (job.status === 'completed' ? 100 : 0)}%`, background: job.status === 'error' ? 'var(--danger)' : 'var(--accent)' }}></div>
                   </div>
                 </div>
                 {job.status === 'running' && (

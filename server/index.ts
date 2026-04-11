@@ -109,25 +109,27 @@ app.post('/api/copy', (req, res) => {
 
   activeProcesses[jobId] = child;
 
-  child.stderr.on('data', (data) => {
-    // rclone normally prints progress to stderr
+  const handleProgress = (data: any) => {
+    if (!activeJobs[jobId]) return;
     const output = data.toString();
 
-    // Parse progress percentage (e.g. "Transferred: ... 45%")
-    const match = output.match(/Transferred:\s+.*?([0-9.]+)%/);
+    const match = output.match(/([0-9.]+)%/);
     if (match) {
-      activeJobs[jobId].progress = `${match[1]}%`;
+      activeJobs[jobId].progress = `${parseFloat(match[1])}%`;
     } else {
-      // Just store the latest text line if we can't find a percentage
       const lines = output.split('\n');
-      for (const line of lines.reverse()) {
-        if (line.trim().length > 0 && line.includes('Transferred:')) {
-          activeJobs[jobId].progress = line.trim();
+      for (let i = lines.length - 1; i >= 0; i--) {
+        const line = lines[i].trim();
+        if (line.length > 0 && line.includes('Transferred:')) {
+          activeJobs[jobId].progress = line;
           break;
         }
       }
     }
-  });
+  };
+
+  child.stdout.on('data', handleProgress);
+  child.stderr.on('data', handleProgress);
 
   child.on('close', (code) => {
     activeJobs[jobId].status = code === 0 ? 'completed' : 'error';
