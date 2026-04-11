@@ -3,7 +3,10 @@ import './App.css';
 import { Pane } from './components/Pane';
 import type { RcloneFile, CopyJob } from './types';
 
-const API_BASE = `http://${window.location.hostname}:3001/api`;
+// Fix for Reverse Proxies: Route relatively in Production, fallback to strict port in Dev
+const API_BASE = import.meta.env.DEV
+  ? `http://${window.location.hostname}:3001/api`
+  : '/api';
 
 function App() {
   const [remotes, setRemotes] = useState<string[]>([]);
