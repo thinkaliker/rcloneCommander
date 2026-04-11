@@ -133,13 +133,23 @@ export const Pane: React.FC<PaneProps> = ({
                 <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={onRefresh}>⟳ Refresh</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <label>Auto-refresh (s):</label>
-                    <input
-                        type="number"
-                        min="0"
-                        style={{ width: '45px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', color: '#fff', borderRadius: '4px', padding: '2px 4px', fontSize: '0.8rem' }}
-                        value={autoRefreshVal}
-                        onChange={(e) => setAutoRefreshVal(parseInt(e.target.value) || 0)}
-                    />
+                    <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                        <button
+                            style={{ background: 'transparent', border: 'none', color: '#fff', padding: '2px 8px', cursor: 'pointer', borderRight: '1px solid var(--glass-border)' }}
+                            onClick={() => setAutoRefreshVal(Math.max(0, autoRefreshVal - 1))}
+                        >-</button>
+                        <input
+                            type="number"
+                            min="0"
+                            style={{ width: '30px', background: 'transparent', border: 'none', color: '#fff', padding: '2px 0', fontSize: '0.8rem', textAlign: 'center', outline: 'none' }}
+                            value={autoRefreshVal}
+                            onChange={(e) => setAutoRefreshVal(parseInt(e.target.value) || 0)}
+                        />
+                        <button
+                            style={{ background: 'transparent', border: 'none', color: '#fff', padding: '2px 8px', cursor: 'pointer', borderLeft: '1px solid var(--glass-border)' }}
+                            onClick={() => setAutoRefreshVal(autoRefreshVal + 1)}
+                        >+</button>
+                    </div>
                 </div>
             </div>
 
