@@ -8,7 +8,7 @@ source ~/.bashrc 2>/dev/null
 # 1. Check & Install Node.js Locally
 if ! command -v node &> /dev/null; then
     echo "Node.js is not found globally. Attempting to fetch it locally..."
-    NODE_VERSION="v20.11.1" # Safe LTS version
+    NODE_VERSION="v22.14.0" # Vite requires 22.12+
     OS="$(uname -s | awk '{print tolower($0)}')"
     ARCH="$(uname -m)"
     
