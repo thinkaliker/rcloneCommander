@@ -285,7 +285,6 @@ function App() {
 
       <div className="main-content">
         <Pane
-          title="Left Pane"
           remotes={remotes}
           activeRemote={leftRemote}
           activePath={leftPath}
@@ -322,7 +321,6 @@ function App() {
         </div>
 
         <Pane
-          title="Right Pane"
           remotes={remotes}
           activeRemote={rightRemote}
           activePath={rightPath}

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import type { RcloneFile } from '../types';
 
 interface PaneProps {
-    title: string;
     remotes: string[];
     activeRemote: string;
     activePath: string;
@@ -21,7 +20,6 @@ interface PaneProps {
 }
 
 export const Pane: React.FC<PaneProps> = ({
-    title,
     remotes,
     activeRemote,
     activePath,
@@ -120,7 +118,6 @@ export const Pane: React.FC<PaneProps> = ({
             onDrop={handleDrop}
         >
             <div className="pane-header">
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-light)' }}>{title}</h3>
                 <select
                     className="remotes-dropdown"
                     value={activeRemote}
@@ -135,7 +132,7 @@ export const Pane: React.FC<PaneProps> = ({
                     value={pathInput}
                     onChange={(e) => setPathInput(e.target.value)}
                     onKeyDown={handlePathSubmit}
-                    placeholder="Path... (Press Enter to navigate)"
+                    placeholder="Path..."
                 />
             </div>
 
