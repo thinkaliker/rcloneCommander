@@ -33,6 +33,7 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copyDirection, setCopyDirection] = useState<'L2R' | 'R2L'>('L2R');
   const [threads, setThreads] = useState(4);
+  const [autoRemove, setAutoRemove] = useState(5);
   const [configDetails, setConfigDetails] = useState<{ path: string, dump: string, error?: string } | null>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [mkdirState, setMkdirState] = useState<{ remote: string, path: string } | null>(null);
