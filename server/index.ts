@@ -138,6 +138,29 @@ app.get('/api/copy/status', (req, res) => {
   res.json({ jobs: activeJobs });
 });
 
-app.listen(port, () => {
+app.get('/api/config', async (req, res) => {
+  try {
+    const { stdout: configFile } = await execAsync('rclone config file');
+    const { stdout: configDump } = await execAsync('rclone config dump || rclone config show');
+    res.json({
+      path: configFile.trim(),
+      dump: configDump.trim()
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.listen(port, async () => {
   console.log(`Server running on port ${port}`);
+  try {
+    const { stdout: configFile } = await execAsync('rclone config file');
+    console.log(`Rclone Config Path: ${configFile.trim()}`);
+
+    // We execute dump but fallback to standard show in case of older rclone versions
+    const { stdout: configDump } = await execAsync('rclone config dump || rclone config show');
+    console.log(`Rclone Configuration:\n${configDump.trim()}`);
+  } catch (err: any) {
+    console.error(`Failed to load rclone config details: ${err.message}`);
+  }
 });

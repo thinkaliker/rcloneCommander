@@ -44,12 +44,17 @@ export const Pane: React.FC<PaneProps> = ({
     const handleNavigate = (file: RcloneFile) => {
         if (!file.IsDir) return;
         let newPath = '';
-        if (activePath === '' || activePath === '/') {
-            newPath = file.Name;
-        } else if (activePath.endsWith('/')) {
-            newPath = `${activePath}${file.Name}`;
+        if (activeRemote === 'Local Filesystem') {
+            const base = activePath || '/';
+            newPath = base.endsWith('/') ? `${base}${file.Name}` : `${base}/${file.Name}`;
         } else {
-            newPath = `${activePath}/${file.Name}`;
+            if (activePath === '' || activePath === '/') {
+                newPath = file.Name;
+            } else if (activePath.endsWith('/')) {
+                newPath = `${activePath}${file.Name}`;
+            } else {
+                newPath = `${activePath}/${file.Name}`;
+            }
         }
         setActivePath(newPath);
     };
@@ -58,7 +63,10 @@ export const Pane: React.FC<PaneProps> = ({
         if (activePath === '' || activePath === '/') return;
         const parts = activePath.split('/');
         parts.pop();
-        const newPath = parts.join('/') || '/';
+        let newPath = parts.join('/');
+        if (activeRemote === 'Local Filesystem' && newPath === '') {
+            newPath = '/';
+        }
         setActivePath(newPath);
     };
 

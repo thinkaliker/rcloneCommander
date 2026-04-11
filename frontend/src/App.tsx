@@ -27,6 +27,8 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copyDirection, setCopyDirection] = useState<'L2R' | 'R2L'>('L2R');
   const [threads, setThreads] = useState(4);
+  const [configDetails, setConfigDetails] = useState<{ path: string, dump: string, error?: string } | null>(null);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
   useEffect(() => {
     fetch(`${API_BASE}/remotes`)
@@ -45,7 +47,12 @@ function App() {
   const fetchFiles = async (remote: string, path: string, setFiles: (f: RcloneFile[]) => void, setLoading: (l: boolean) => void) => {
     setLoading(true);
     try {
-      const fullPath = remote === 'Local Filesystem' ? path || 'Local Filesystem' : `${remote}${path}`;
+      let fullPath = '';
+      if (remote === 'Local Filesystem') {
+        fullPath = 'Local Filesystem:' + (path || '/');
+      } else {
+        fullPath = `${remote}${path}`;
+      }
       const res = await fetch(`${API_BASE}/files?path=${encodeURIComponent(fullPath)}`);
       const data = await res.json();
       if (data.files) {
@@ -98,9 +105,15 @@ function App() {
   };
 
   const getFullPath = (remote: string, pathParam: string, file: string) => {
-    let base = remote === 'Local Filesystem' ? 'Local Filesystem:' + pathParam : remote + pathParam;
-    if (!base.endsWith('/')) base += '/';
-    return base + file;
+    if (remote === 'Local Filesystem') {
+      let p = pathParam || '/';
+      if (!p.endsWith('/')) p += '/';
+      return 'Local Filesystem:' + p + file;
+    } else {
+      let base = remote + pathParam;
+      if (!base.endsWith('/')) base += '/';
+      return base + file;
+    }
   };
 
   const handleCopyConfirm = async () => {
@@ -165,6 +178,22 @@ function App() {
     }
   };
 
+  const showConfig = async () => {
+    setIsConfigModalOpen(true);
+    setConfigDetails(null);
+    try {
+      const res = await fetch(`${API_BASE}/config`);
+      const data = await res.json();
+      if (data.error) {
+        setConfigDetails({ path: 'Error Executing Rclone Config', dump: '', error: data.error });
+      } else {
+        setConfigDetails({ path: data.path, dump: data.dump });
+      }
+    } catch (e: any) {
+      setConfigDetails({ path: 'Network/Server Error', dump: '', error: e.message });
+    }
+  };
+
   const hasRunningJobs = Object.values(activeJobs).some(j => j.status === 'running');
   const runningJobs = Object.values(activeJobs).filter(j => j.status === 'running');
 
@@ -172,6 +201,7 @@ function App() {
     <div className="app-container">
       <div className="header">
         <h1>rclone<span>Commander</span></h1>
+        <button className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.9rem' }} onClick={showConfig}>Rclone Config</button>
       </div>
 
       <div className="main-content">
@@ -236,6 +266,37 @@ function App() {
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
               <button className="btn-primary" style={{ background: '#555', boxShadow: 'none' }} onClick={() => setIsModalOpen(false)}>Cancel</button>
               <button className="btn-primary" onClick={handleCopyConfirm}>Start Copy</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isConfigModalOpen && (
+        <div className="overlay">
+          <div className="modal" style={{ width: '600px' }}>
+            <h2>Rclone Configuration</h2>
+            {!configDetails ? (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>Loading config details natively from the server...</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div className="modal-input">
+                  <label>Config Path</label>
+                  <input className="path-input" readOnly value={configDetails.path} />
+                </div>
+                {configDetails.error ? (
+                  <div style={{ color: 'var(--danger)', padding: '10px', background: 'rgba(255,0,0,0.1)', borderRadius: '8px' }}>
+                    {configDetails.error}
+                  </div>
+                ) : (
+                  <div className="modal-input">
+                    <label>Config Dump</label>
+                    <textarea className="path-input" readOnly value={configDetails.dump} style={{ height: '200px', resize: 'vertical', fontFamily: 'monospace' }} />
+                  </div>
+                )}
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+              <button className="btn-primary" onClick={() => setIsConfigModalOpen(false)}>Close Debugger</button>
             </div>
           </div>
         </div>
