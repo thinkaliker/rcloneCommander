@@ -5,15 +5,47 @@ source ~/.bash_profile 2>/dev/null
 source ~/.zshrc 2>/dev/null
 source ~/.bashrc 2>/dev/null
 
-# 1. Check & Install Node.js
+# 1. Check & Install Node.js Locally
 if ! command -v node &> /dev/null; then
-    echo "Node.js is not found on your system."
-    echo "Attempting to install Node.js via Homebrew..."
-    if ! command -v brew &> /dev/null; then
-        echo "Error: Homebrew is not installed. Please install Node.js manually from https://nodejs.org/"
+    echo "Node.js is not found globally. Attempting to fetch it locally..."
+    NODE_VERSION="v20.11.1" # Safe LTS version
+    OS="$(uname -s | awk '{print tolower($0)}')"
+    ARCH="$(uname -m)"
+    
+    # Normalize architecture string
+    if [ "$ARCH" = "x86_64" ]; then
+        N_ARCH="x64"
+    elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+        N_ARCH="arm64"
+    else
+        echo "Unsupported architecture: $ARCH"
         exit 1
     fi
-    brew install node
+
+    # Determine tarball name based on OS
+    if [ "$OS" = "darwin" ]; then
+        NODE_TAR="node-$NODE_VERSION-darwin-$N_ARCH.tar.gz"
+    else
+        NODE_TAR="node-$NODE_VERSION-linux-$N_ARCH.tar.gz"
+    fi
+    NODE_URL="https://nodejs.org/dist/$NODE_VERSION/$NODE_TAR"
+    NODE_DIR="$PWD/.node"
+
+    if [ ! -d "$NODE_DIR" ]; then
+        echo "Downloading $NODE_TAR to local directory..."
+        mkdir -p "$NODE_DIR"
+        if command -v curl &> /dev/null; then
+            curl -sL "$NODE_URL" | tar xz -C "$NODE_DIR" --strip-components=1
+        elif command -v wget &> /dev/null; then
+            wget -qO- "$NODE_URL" | tar xz -C "$NODE_DIR" --strip-components=1
+        else
+            echo "Error: Neither curl nor wget found. Cannot download Node.js!"
+            exit 1
+        fi
+    fi
+    
+    export PATH="$NODE_DIR/bin:$PATH"
+    echo "Using local Node.js: $(node -v)"
 else
     echo "Node.js is found: $(command -v node) (Version: $(node -v))"
 fi
