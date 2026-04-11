@@ -38,6 +38,14 @@ export const Pane: React.FC<PaneProps> = ({
     autoRefreshVal,
     setAutoRefreshVal
 }) => {
+    const formatBytes = (bytes: number) => {
+        if (!bytes || bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    };
+
     const [pathInput, setPathInput] = useState(activePath);
     const [isDragOver, setIsDragOver] = useState(false);
 
@@ -210,7 +218,7 @@ export const Pane: React.FC<PaneProps> = ({
                                     />
                                     <div className="file-icon">{file.IsDir ? '📁' : '📄'}</div>
                                     <div className="file-name" title={file.Name}>{file.Name}</div>
-                                    {!file.IsDir && <div className="file-size">{(file.Size / 1024).toFixed(1)} KB</div>}
+                                    {!file.IsDir && <div className="file-size">{formatBytes(file.Size)}</div>}
                                 </div>
                             )
                         })}
