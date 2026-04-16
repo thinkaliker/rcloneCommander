@@ -1,4 +1,4 @@
-FROM node:22-bullseye-slim
+FROM node:22-bookworm-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fuse3 \
     man-db \
     gosu \
-    shadow \
+    passwd \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
