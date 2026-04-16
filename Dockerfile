@@ -1,11 +1,19 @@
 FROM node:22-bullseye-slim
 
-# Install system dependencies and rclone securely via the official installer
-# Added gosu and shadow for PUID/PGID support
-RUN apt-get update && apt-get install -y curl unzip fuse3 man-db gosu shadow \
-    && curl https://rclone.org/install.sh | bash \
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    unzip \
+    fuse3 \
+    man-db \
+    gosu \
+    shadow \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Install rclone via the official installer script
+RUN curl https://rclone.org/install.sh | bash
 
 WORKDIR /app
 
