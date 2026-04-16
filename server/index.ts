@@ -12,6 +12,19 @@ const execAsync = promisify(exec);
 app.use(cors());
 app.use(express.json());
 
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
+// Endpoint for frontend log forwarding
+app.post('/api/log', (req, res) => {
+  const { level, message, data } = req.body;
+  console.log(`[${new Date().toISOString()}] [FRONTEND] [${level?.toUpperCase() || 'LOG'}] ${message}`, data ? JSON.stringify(data) : '');
+  res.sendStatus(200);
+});
+
 // Data structures for tracking jobs
 interface CopyJob {
   id: string;
@@ -19,6 +32,7 @@ interface CopyJob {
   destination: string;
   progress: string; // latest percentage or text from stdout
   status: 'running' | 'completed' | 'error';
+  error?: string;
   threads: number;
   autoRemoveSeconds?: number;
 }
@@ -131,15 +145,27 @@ app.post('/api/copy', (req, res) => {
 
   activeProcesses[jobId] = child;
 
+  let lastError = '';
   const handleProgress = (data: any) => {
     if (!activeJobs[jobId]) return;
     const output = data.toString();
+
+    // Capture potential error messages
+    const lines = output.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.includes('ERROR :') || trimmed.includes('Failed to') || (trimmed.length > 0 && !trimmed.match(/[0-9.]%/))) {
+        // If it's not a progress line, it might be an error or important status
+        if (trimmed.includes('ERROR :') || trimmed.includes('Failed to')) {
+            lastError = trimmed;
+        }
+      }
+    }
 
     const match = output.match(/([0-9.]+)%/);
     if (match) {
       activeJobs[jobId].progress = `${parseFloat(match[1])}%`;
     } else {
-      const lines = output.split('\n');
       for (let i = lines.length - 1; i >= 0; i--) {
         const line = lines[i].trim();
         if (line.length > 0 && line.includes('Transferred:')) {
@@ -155,7 +181,11 @@ app.post('/api/copy', (req, res) => {
 
   child.on('close', (code) => {
     activeJobs[jobId].status = code === 0 ? 'completed' : 'error';
-    if (code === 0) activeJobs[jobId].progress = '100%';
+    if (code === 0) {
+      activeJobs[jobId].progress = '100%';
+    } else {
+      activeJobs[jobId].error = lastError || `Exited with code ${code}`;
+    }
 
     const delay = activeJobs[jobId].autoRemoveSeconds;
     if (delay && delay > 0) {

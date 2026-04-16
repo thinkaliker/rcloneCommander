@@ -40,6 +40,43 @@ function App() {
   const [mkdirFolderName, setMkdirFolderName] = useState('');
   const [isConnected, setIsConnected] = useState(true);
 
+  // Utility to send logs to the server
+  const logToServer = (level: string, message: string, data?: any) => {
+    fetch(`${API_BASE}/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ level, message, data }),
+      keepalive: true // Ensure log completes even if page unloads
+    }).catch(() => {}); // Silent fail
+  };
+
+  useEffect(() => {
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    console.error = (...args) => {
+      logToServer('error', args.map(String).join(' '));
+      originalError.apply(console, args);
+    };
+
+    console.warn = (...args) => {
+      logToServer('warn', args.map(String).join(' '));
+      originalWarn.apply(console, args);
+    };
+
+    const handleGlobalError = (event: ErrorEvent) => {
+      logToServer('error', `Uncaught Error: ${event.message}`, { filename: event.filename, lineno: event.lineno });
+    };
+
+    window.addEventListener('error', handleGlobalError);
+
+    return () => {
+      console.error = originalError;
+      console.warn = originalWarn;
+      window.removeEventListener('error', handleGlobalError);
+    };
+  }, []);
+
   useEffect(() => {
     fetch(`${API_BASE}/remotes`)
       .then(res => res.json())
@@ -430,19 +467,26 @@ function App() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {Object.values(activeJobs).map(job => (
-              <div key={job.id} className="job-item">
-                <div className="job-item-info">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#ccc', marginBottom: '6px' }}>
-                    <span>{job.source.split('/').pop()} ➡️ {job.destination.split('/').pop() || '/'}</span>
-                    <span style={{ color: job.status === 'error' ? 'var(--danger)' : '#aaa' }}>{job.progress}</span>
+              <div key={job.id} className="job-item" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="job-item-info" style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#ccc', marginBottom: '6px' }}>
+                      <span style={{ maxWidth: '70%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.source.split('/').pop()} ➡️ {job.destination.split('/').pop() || '/'}</span>
+                      <span style={{ color: job.status === 'error' ? 'var(--danger)' : '#aaa' }}>{job.progress}</span>
+                    </div>
+                    <div className="progress-bar-container">
+                      <div className="progress-bar-fill" style={{ width: `${job.progress.match(/([0-9.]+)%/)?.[1] || (job.status === 'completed' ? 100 : 0)}%`, background: job.status === 'error' ? 'var(--danger)' : 'var(--accent)' }}></div>
+                    </div>
+                    {job.status === 'error' && job.error && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--danger)', marginTop: '6px', padding: '4px 8px', background: 'rgba(255,0,0,0.1)', borderRadius: '4px', borderLeft: '2px solid var(--danger)', wordBreak: 'break-all' }}>
+                        {job.error}
+                      </div>
+                    )}
                   </div>
-                  <div className="progress-bar-container">
-                    <div className="progress-bar-fill" style={{ width: `${job.progress.match(/([0-9.]+)%/)?.[1] || (job.status === 'completed' ? 100 : 0)}%`, background: job.status === 'error' ? 'var(--danger)' : 'var(--accent)' }}></div>
-                  </div>
+                  {job.status === 'running' && (
+                    <button className="btn-primary" style={{ background: 'var(--danger)', padding: '6px 12px', fontSize: '0.8rem', boxShadow: 'none' }} onClick={() => handleStopJob(job.id)}>Stop</button>
+                  )}
                 </div>
-                {job.status === 'running' && (
-                  <button className="btn-primary" style={{ background: 'var(--danger)', padding: '6px 12px', fontSize: '0.8rem', boxShadow: 'none' }} onClick={() => handleStopJob(job.id)}>Stop</button>
-                )}
               </div>
             ))}
           </div>

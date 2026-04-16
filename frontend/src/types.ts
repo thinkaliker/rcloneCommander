@@ -13,5 +13,6 @@ export interface CopyJob {
     destination: string;
     progress: string;
     status: 'running' | 'completed' | 'error';
+    error?: string;
     threads: number;
 }
